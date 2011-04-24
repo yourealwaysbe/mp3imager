@@ -9,7 +9,7 @@ Gets some strange results sometimes.
 
 Requires:
     
-    perl 3
+    python 3
     curl
     find
     stagger for python
