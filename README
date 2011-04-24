@@ -1,0 +1,22 @@
+
+A quick and dirty python script for automatically downloading and embedding
+images into your mp3 files.
+
+Provided with no guarantee it won't mess up all of your files...
+
+Simply searches amazon for artist + album title, and attaches the first hit.
+Gets some strange results sometimes.
+
+Requires:
+    
+    perl 3
+    curl
+    find
+    stagger for python
+
+Usage:
+
+    mp3imager <base-mp3-dir>
+
+Will try to attach an image to every mp3 in a subdirectory of the given
+directory.  Also saves an image in the directory containing the mp3.        

@@ -1,0 +1,143 @@
+#!/usr/bin/python
+
+import subprocess, re, sys, stagger, urllib.request, os
+from stagger.id3 import *  
+
+
+SearchPrefix      = 'http://www.amazon.co.uk/s/field-keywords='
+CurlUserAgent     = 'Mozilla/4.0'
+ProductImageRE    = re.compile('.*<img[^>]*src=\"([^\"]*)"[^>]*alt=\"Product Details\".*')
+ProductImageGroup = 1
+Curl              = 'curl'
+CurlUserAgentFlag = '-A'
+CurlSilent        = '-s'
+BufSize           = 1000
+
+ImageBaseUrlRE    = re.compile('(.*)\.[^.]*\.[^.]*')
+ImageBaseUrlGroup = 1
+ImgDimension      = '_SL300'
+ImgSuffix         = 'jpg'
+
+FailImgUrl        = 'NotFound'
+Retries           = 5 
+
+Find              = 'find'
+FindRegExpFlag    = '-regex'
+FindMp3RegExp     = '.*\\(mp3\\|MP3\\)'
+
+
+def GetURL(url):
+    print("Getting URL:", url)
+    return subprocess.Popen([Curl, 
+                             CurlSilent, 
+                             CurlUserAgentFlag, 
+                             CurlUserAgent, 
+                             url], 
+                            bufsize=BufSize, 
+                            stdout=subprocess.PIPE).stdout
+
+def GetSimpleImgUrl(search_term):
+#    rawData = urllib.request.urlopen(SearchPrefix+search_term)
+    rawData = GetURL(SearchPrefix+search_term)
+    line = 'blah'
+    img_url = FailImgUrl
+    while (len(line) > 0) and (len(img_url) != FailImgUrl):
+        try:
+            line = rawData.readline().decode('utf-8')
+            m = ProductImageRE.match(line)
+            if m:
+                img_url = m.group(ProductImageGroup)
+        except UnicodeDecodeError:
+            #print('Unicode decode error, ignoring line')
+            pass
+    return img_url
+
+
+def MakeLarge(simple_url):
+    m = ImageBaseUrlRE.match(simple_url)
+    if m:
+        return (m.group(ImageBaseUrlGroup) + '.' + 
+                ImgDimension + '.' + 
+                ImgSuffix)
+    else:
+        #print('Error changing image size.')
+        return simple_url
+
+
+def SearchTerm(artist, album):
+    both = artist + " " + album
+    return urllib.request.pathname2url(both)
+
+
+def GetImageUrl(artist, album):
+    tries = 0
+    full_url = FailImgUrl
+    while (tries < Retries) and (full_url == FailImgUrl):
+        simple_url = GetSimpleImgUrl(SearchTerm(artist, album))
+        full_url = MakeLarge(simple_url)
+        tries+=1
+    return full_url
+
+def GetImageFileName(directory, artist, album):
+    return (directory + os.sep +
+            artist.replace(os.sep, '') + " - " +
+            album.replace(os.sep, '') +
+            ".jpg")
+
+
+def DoMp3(mp3_file):
+    try:
+        tag = stagger.read_tag(mp3_file)
+        if len(tag.picture) > 0:
+            pass
+        elif (len(tag.album) == 0) or (len(tag.artist) == 0):
+            print("One not found of " + tag.album + " and " + tag.artist)
+        else:
+            print("Doing " + tag.artist + "; " + tag.album + "; " + tag.title)
+            image_name = GetImageFileName(os.path.dirname(mp3_file),
+                                          tag.artist,
+                                          tag.album)
+            has_image = 1
+            if not os.path.exists(image_name):
+                print("Trying to download")
+                has_image = 0
+                full_url = GetImageUrl(tag.artist, tag.album)
+                if full_url != FailImgUrl:
+                    rawImage = GetURL(full_url)
+                    img_file = open(image_name, mode='wb')
+                    img_file.write(rawImage.read())
+                    img_file.close()
+                    has_image = 1
+                else:
+                    print("Failed... moving on.")
+            if has_image:
+                tag.picture = image_name
+                tag.write()
+    except stagger.NoTagError:
+        pass
+        
+ 
+
+def DoMp3s(directory):
+    print('Searching for MP3s in ' + directory)
+    rawData = subprocess.Popen([Find, 
+                                directory, 
+                                FindRegExpFlag, 
+                                FindMp3RegExp], 
+                               bufsize=BufSize, 
+                               stdout=subprocess.PIPE).stdout
+    line = 'blah'
+    while (len(line) > 0): 
+        line = rawData.readline().decode('utf-8').strip()
+        if len(line) > 0:
+            DoMp3(line)
+  
+
+
+if len(sys.argv) >= 2:
+    DoMp3s(sys.argv[1])
+else:
+    print("usage: mp3imager <base-dir>")
+    print("warning: may trash your mp3s while trying to add images to them.")
+
+
