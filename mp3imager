@@ -25,6 +25,10 @@ Find              = 'find'
 FindRegExpFlag    = '-regex'
 FindMp3RegExp     = '.*\\(mp3\\|MP3\\)'
 
+# To remember what we already tried to download
+# to avoid doing it for every song in the album...
+tried_and_failed = set()
+
 
 def GetURL(url):
     print("Getting URL:", url)
@@ -92,6 +96,8 @@ def DoMp3(mp3_file):
             pass
         elif (len(tag.album) == 0) or (len(tag.artist) == 0):
             print("One not found of " + tag.album + " and " + tag.artist)
+        elif ((tag.artist, tag.album) in tried_and_failed):
+            print("Already tried and failed",tag.artist,";",tag.album,";",tag.title)
         else:
             print("Doing " + tag.artist + "; " + tag.album + "; " + tag.title)
             image_name = GetImageFileName(os.path.dirname(mp3_file),
@@ -109,6 +115,7 @@ def DoMp3(mp3_file):
                     img_file.close()
                     has_image = 1
                 else:
+                    tried_and_failed.add((tag.artist, tag.album))
                     print("Failed... moving on.")
             if has_image:
                 tag.picture = image_name
