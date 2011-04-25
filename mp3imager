@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import subprocess, re, sys, stagger, urllib.request, os
 from stagger.id3 import *  
@@ -6,8 +6,9 @@ from stagger.id3 import *
 
 SearchPrefix      = 'http://www.amazon.co.uk/s/field-keywords='
 CurlUserAgent     = 'Mozilla/4.0'
-ProductImageRE    = re.compile('.*<img[^>]*src=\"([^\"]*)"[^>]*alt=\"Product Details\".*')
-ProductImageGroup = 1
+ProductImageRE    = re.compile('.*<a href=\"http://www.amazon.co.uk/([^/]*)/.*<img[^>]*src=\"([^\"]*)"[^>]*alt=\"Product Details\".*')
+ProductDescGroup  = 1
+ProductImageGroup = 2
 Curl              = 'curl'
 CurlUserAgentFlag = '-A'
 CurlSilent        = '-s'
@@ -40,14 +41,13 @@ def GetURL(url):
                             bufsize=BufSize, 
                             stdout=subprocess.PIPE).stdout
 
-def GetSimpleImgUrl(search_term):
-#    rawData = urllib.request.urlopen(SearchPrefix+search_term)
-    rawData = GetURL(SearchPrefix+search_term)
+
+def TakeFirstImage(page_data):
     line = 'blah'
     img_url = FailImgUrl
     while (len(line) > 0) and (len(img_url) != FailImgUrl):
         try:
-            line = rawData.readline().decode('utf-8')
+            line = page_data.readline().decode('utf-8')
             m = ProductImageRE.match(line)
             if m:
                 img_url = m.group(ProductImageGroup)
@@ -55,6 +55,40 @@ def GetSimpleImgUrl(search_term):
             #print('Unicode decode error, ignoring line')
             pass
     return img_url
+
+
+def GetCovers(page_data):
+    line = 'blah'
+    covers = [] 
+    while (len(line) > 0):
+        try:
+            line = page_data.readline().decode('utf-8')
+            m = ProductImageRE.match(line)
+            if m:
+                covers.append((m.group(ProductDescGroup),
+                               m.group(ProductImageGroup)))
+        except UnicodeDecodeError:
+            #print('Unicode decode error, ignoring line')
+            pass
+    return covers
+
+   
+
+
+def AskImage(page_data):
+    covers = GetCovers(page_data)
+    for (desc, cover) in covers:
+        print(desc)
+    return FailImgUrl
+
+
+def GetSimpleImgUrl(search_term):
+#    rawData = urllib.request.urlopen(SearchPrefix+search_term)
+    rawData = GetURL(SearchPrefix+search_term)
+    if choose_images:
+        return AskImage(rawData)
+    else:
+        return TakeFirstImage(rawData)
 
 
 def MakeLarge(simple_url):
@@ -92,7 +126,7 @@ def GetImageFileName(directory, artist, album):
 def DoMp3(mp3_file):
     try:
         tag = stagger.read_tag(mp3_file)
-        if len(tag.picture) > 0:
+        if (len(tag.picture) > 0) and clobber_images:
             pass
         elif (len(tag.album) == 0) or (len(tag.artist) == 0):
             print("One not found of " + tag.album + " and " + tag.artist)
@@ -140,11 +174,24 @@ def DoMp3s(directory):
             DoMp3(line)
   
 
+mp3dir = ''
+clobber_images = 0
+choose_images = 0
 
-if len(sys.argv) >= 2:
-    DoMp3s(sys.argv[1])
+for arg in sys.argv[1:]:
+    if arg == '--clobber':
+        clobber_images == 1
+    elif arg == '--choose':
+        choose_images = 1
+    elif len(mp3dir) == 0:
+        mp3dir = arg
+
+if len(mp3dir) > 0:
+    DoMp3s(mp3dir)
 else:
     print("usage: mp3imager <base-dir>")
     print("warning: may trash your mp3s while trying to add images to them.")
+    print("    --clobber : override any existing embedded images")
+    print("    --choose : offer a menu of choices instead of taking the first one.")
 
 
