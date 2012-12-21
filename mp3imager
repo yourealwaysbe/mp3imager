@@ -70,8 +70,6 @@ def TakeFirstImage(page_data):
             m = ProductImageRE.match(line)
             if m:
                 img_url = m.group(ProductImageGroup)
-                print("Url: ",img_url)
-                print("From: ",line)
         except UnicodeDecodeError:
             #print('Unicode decode error, ignoring line')
             pass
