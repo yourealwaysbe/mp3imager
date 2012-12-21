@@ -14,7 +14,7 @@ from stagger.id3 import *
 # ImageRestUrlGroup = 2
 # ImgDimension      = '._SL300'
 # ImgSuffix         = 'jpg'
-
+# Retries           = 5 
 
 # Last FM Settings
 
@@ -28,7 +28,7 @@ ImageBaseUrlGroup = 1
 ImageRestUrlGroup = 2
 ImgDimension      = '252'
 ImgSuffix         = 'png'
-
+Retries           = 1 
 
 # General Settings
 
@@ -39,7 +39,6 @@ CurlSilent        = '-s'
 BufSize           = 1000
 
 FailImgUrl        = 'NotFound'
-Retries           = 5 
 
 Find              = 'find'
 FindRegExpFlag    = '-regex'
