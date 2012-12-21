@@ -23,7 +23,7 @@ ProductImageRE    = re.compile('.*<a href=\"([^\"]*)\".*<img\ *width=\"[^\"]*\"\
 ProductDescGroup  = 1
 ProductImageGroup = 2
 AmazonResize      = 0
-ImageBaseUrlRE    = re.compile('(.*serve/)[0-9]*(/.*)')
+ImageBaseUrlRE    = re.compile('(.*serve/)[0-9a-z]*(/.*)')
 ImageBaseUrlGroup = 1
 ImageRestUrlGroup = 2
 ImgDimension      = '252'
