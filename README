@@ -4,8 +4,9 @@ images into your mp3 files.
 
 Provided with no guarantee it won't mess up all of your files...
 
-Simply searches amazon for artist + album title, and attaches the first hit.
-Gets some strange results sometimes.
+Simply searches lastfm/amazon for artist + album title, and attaches the first
+hit.  Gets some strange results sometimes.  Last FM is default, but see the code
+to see how to enable amazon instead.
 
 Requires:
     
