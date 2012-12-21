@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import subprocess, re, sys, stagger, urllib.request, os
+import subprocess, re, sys, stagger, urllib.request, os, base64
 from stagger.id3 import *  
 
 # Amazon Settings
@@ -136,11 +136,11 @@ def GetImageUrl(artist, album):
     return full_url
 
 def SanitiseTag(tag):
-    return urllib.request.pathname2url(tag)
+    return base64.urlsafe_b64encode(tag.encode("utf-8")).decode("utf-8")
 
 def GetImageFileName(directory, artist, album):
     return (directory + os.sep +
-            SanitiseTag(artist) + " - " +
+            SanitiseTag(artist) + "-" +
             SanitiseTag(album) +
             "." + ImgSuffix)
 
