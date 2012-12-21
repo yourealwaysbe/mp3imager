@@ -135,10 +135,13 @@ def GetImageUrl(artist, album):
         tries+=1
     return full_url
 
+def SanitiseTag(tag):
+    return urllib.request.pathname2url(tag)
+
 def GetImageFileName(directory, artist, album):
     return (directory + os.sep +
-            artist.replace(os.sep, '') + " - " +
-            album.replace(os.sep, '') +
+            SanitiseTag(artist) + " - " +
+            SanitiseTag(album) +
             "." + ImgSuffix)
 
 
