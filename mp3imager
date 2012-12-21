@@ -3,21 +3,40 @@
 import subprocess, re, sys, stagger, urllib.request, os
 from stagger.id3 import *  
 
+# Amazon Settings
 
-SearchPrefix      = 'http://www.amazon.co.uk/s/field-keywords='
-CurlUserAgent     = 'Mozilla/4.0'
-ProductImageRE    = re.compile('.*<a href=\"http://www.amazon.co.uk/([^/]*)/.*<img[^>]*src=\"([^\"]*)"[^>]*alt=\"Product Details\".*')
+# SearchPrefix      = 'http://www.amazon.co.uk/s/field-keywords='
+# ProductImageRE    = re.compile('.*<a href=\"http://www.amazon.co.uk/([^/]*)/.*<img[^>]*src=\"([^\"]*)"[^>]*alt=\"Product Details\".*')
+# ProductDescGroup  = 1
+# ProductImageGroup = 2
+# ImageBaseUrlRE    = re.compile('(.*)\.[^.]*(\.[^.]*)')
+# ImageBaseUrlGroup = 1
+# ImageRestUrlGroup = 2
+# ImgDimension      = '._SL300'
+# ImgSuffix         = 'jpg'
+
+
+# Last FM Settings
+
+SearchPrefix      = 'http://www.last.fm/search?q='
+ProductImageRE    = re.compile('.*<a href=\"([^\"]*)\".*<img\ *width=\"[^\"]*\"\ *src=\"([^\"]*)\"\ *class=\"art\"\ *class=\"albumCover[^\"]*\"\ */>.*')
 ProductDescGroup  = 1
 ProductImageGroup = 2
+AmazonResize      = 0
+ImageBaseUrlRE    = re.compile('(.*serve/)[0-9]*(/.*)')
+ImageBaseUrlGroup = 1
+ImageRestUrlGroup = 2
+ImgDimension      = '252'
+ImgSuffix         = 'png'
+
+
+# General Settings
+
+CurlUserAgent     = 'Mozilla/4.0'
 Curl              = 'curl'
 CurlUserAgentFlag = '-A'
 CurlSilent        = '-s'
 BufSize           = 1000
-
-ImageBaseUrlRE    = re.compile('(.*)\.[^.]*\.[^.]*')
-ImageBaseUrlGroup = 1
-ImgDimension      = '_SL300'
-ImgSuffix         = 'jpg'
 
 FailImgUrl        = 'NotFound'
 Retries           = 5 
@@ -45,12 +64,14 @@ def GetURL(url):
 def TakeFirstImage(page_data):
     line = 'blah'
     img_url = FailImgUrl
-    while (len(line) > 0) and (len(img_url) != FailImgUrl):
+    while (len(line) > 0) and (img_url == FailImgUrl):
         try:
             line = page_data.readline().decode('utf-8')
             m = ProductImageRE.match(line)
             if m:
                 img_url = m.group(ProductImageGroup)
+                print("Url: ",img_url)
+                print("From: ",line)
         except UnicodeDecodeError:
             #print('Unicode decode error, ignoring line')
             pass
@@ -94,9 +115,9 @@ def GetSimpleImgUrl(search_term):
 def MakeLarge(simple_url):
     m = ImageBaseUrlRE.match(simple_url)
     if m:
-        return (m.group(ImageBaseUrlGroup) + '.' + 
-                ImgDimension + '.' + 
-                ImgSuffix)
+        return (m.group(ImageBaseUrlGroup) + 
+                ImgDimension + 
+                m.group(ImageRestUrlGroup))
     else:
         #print('Error changing image size.')
         return simple_url
@@ -120,7 +141,7 @@ def GetImageFileName(directory, artist, album):
     return (directory + os.sep +
             artist.replace(os.sep, '') + " - " +
             album.replace(os.sep, '') +
-            ".jpg")
+            "." + ImgSuffix)
 
 
 def DoMp3(mp3_file):
